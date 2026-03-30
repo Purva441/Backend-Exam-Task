@@ -28,7 +28,6 @@ Backend implementation for:
 src/
 ├── config/
 ├── controllers/
-├── repositories/
 ├── middleware/
 ├── routes/
 ├── services/
@@ -214,3 +213,4 @@ Send JSON:
 - Direct dependencies were updated to safer current major/minor versions; run a fresh install to refresh `package-lock.json`.
 - Prisma's vulnerable transitive `effect` dependency is patched via `npm overrides` to avoid a forced Prisma 7 upgrade.
 - Runtime Node version check script was removed to keep the project simpler; `engines` still documents the expected Node 22 range.
+- Repository layer was removed to keep the project at a pure fresher-friendly controller/service structure.
