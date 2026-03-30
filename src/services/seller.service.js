@@ -2,14 +2,8 @@ const path = require("path");
 const PDFDocument = require("pdfkit");
 
 const ApiError = require("../utils/apiError");
+const prisma = require("../config/prismaClient");
 const { validateCreateProduct } = require("../utils/validators");
-const {
-  createProduct,
-  listSellerProducts,
-  countSellerProducts,
-  findProductByIdAndSeller,
-  deleteProductById
-} = require("../repositories/product.repository");
 
 const createSellerProduct = async ({
   sellerId,
@@ -37,12 +31,17 @@ const createSellerProduct = async ({
     });
   }
 
-  const product = await createProduct({
-    productName: productName.trim(),
-    productDescription: productDescription.trim(),
-    sellerId,
-    brands: {
-      create: brandData
+  const product = await prisma.product.create({
+    data: {
+      productName: productName.trim(),
+      productDescription: productDescription.trim(),
+      sellerId,
+      brands: {
+        create: brandData
+      }
+    },
+    include: {
+      brands: true
     }
   });
 
@@ -74,8 +73,20 @@ const createSellerProduct = async ({
 };
 
 const getSellerProducts = async ({ sellerId, page, limit, skip }) => {
-  const products = await listSellerProducts({ sellerId, skip, limit });
-  const total = await countSellerProducts(sellerId);
+  const products = await prisma.product.findMany({
+    where: { sellerId },
+    skip,
+    take: limit,
+    orderBy: {
+      createdAt: "desc"
+    },
+    include: {
+      brands: true
+    }
+  });
+  const total = await prisma.product.count({
+    where: { sellerId }
+  });
   const sellerProducts = [];
   let totalPages = Math.ceil(total / limit);
 
@@ -123,7 +134,15 @@ const getSellerProducts = async ({ sellerId, page, limit, skip }) => {
 };
 
 const getSellerProductPdfData = async ({ sellerId, productId }) => {
-  const product = await findProductByIdAndSeller(productId, sellerId);
+  const product = await prisma.product.findFirst({
+    where: {
+      id: productId,
+      sellerId
+    },
+    include: {
+      brands: true
+    }
+  });
 
   if (!product) {
     throw new ApiError(404, "Product not found.");
@@ -196,13 +215,20 @@ const generateProductPdf = ({ product, res }) => {
 };
 
 const deleteSellerProduct = async ({ sellerId, productId }) => {
-  const product = await findProductByIdAndSeller(productId, sellerId);
+  const product = await prisma.product.findFirst({
+    where: {
+      id: productId,
+      sellerId
+    }
+  });
 
   if (!product) {
     throw new ApiError(404, "Product not found.");
   }
 
-  await deleteProductById(product.id);
+  await prisma.product.delete({
+    where: { id: product.id }
+  });
 };
 
 module.exports = {

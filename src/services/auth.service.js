@@ -1,15 +1,16 @@
 const ApiError = require("../utils/apiError");
 const jwt = require("jsonwebtoken");
+const prisma = require("../config/prismaClient");
 const { comparePassword } = require("../utils/password");
-const { findAdminByEmail } = require("../repositories/admin.repository");
-const { findSellerByEmail } = require("../repositories/seller.repository");
 
 const jwtSecret = process.env.JWT_SECRET || "replace_with_strong_secret_key";
 const jwtExpiresIn = process.env.JWT_EXPIRES_IN || "1d";
 
 const loginAdmin = async ({ email, password }) => {
   const adminEmail = email.toLowerCase();
-  const admin = await findAdminByEmail(adminEmail);
+  const admin = await prisma.admin.findUnique({
+    where: { email: adminEmail }
+  });
 
   if (!admin) {
     throw new ApiError(401, "Invalid admin credentials.");
@@ -44,7 +45,9 @@ const loginAdmin = async ({ email, password }) => {
 
 const loginSeller = async ({ email, password }) => {
   const sellerEmail = email.toLowerCase();
-  const seller = await findSellerByEmail(sellerEmail);
+  const seller = await prisma.seller.findUnique({
+    where: { email: sellerEmail }
+  });
 
   if (!seller) {
     throw new ApiError(401, "Invalid seller credentials.");
